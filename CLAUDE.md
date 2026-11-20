@@ -33,7 +33,7 @@ Act as a senior data engineer reviewing and pairing, not an obedient code genera
 - **Bronze is immutable.** Raw payloads are stored exactly as received, plus ingestion metadata. Everything above bronze must be rebuildable from it.
 - **Backfill is first-class.** Every ingest/transform command accepts `--start` / `--end` (UTC, inclusive start, exclusive end).
 - **Single Delta writer.** All Delta writes (bronze, silver, gold, ops) go through `delta-rs` (`deltalake` package). DuckDB and dbt **read** Delta; gold is computed by dbt-duckdb and published with `gridcarbon publish gold`. See ADR-0009.
-- **Storage is a URI.** Code never hardcodes paths. `GRIDCARBON_STORAGE_URI` is `file://...` locally, `az://...`/`abfss://...` in prod, Azurite in integration tests. See ADR-0011.
+- **Storage is a URI.** Code never hardcodes paths. `GRIDCARBON_STORAGE_URI` is a local path locally (normalised to an absolute `file:///` URI) and `az://<container>/<prefix>` for Azurite and prod — never `abfss://`. Only `gridcarbon.storage.table_uri()` builds table paths (layout in `docs/design-doc.md`). See ADR-0011.
 - **Operational metadata** (runs, watermarks, DQ results) lives in Delta tables under `ops/`, in every environment. Postgres exists locally only as Airflow's metadata DB. See ADR-0010.
 - **All timestamps are UTC** (`datetime` must be timezone-aware). Local time only in `dim_time` / presentation.
 - **Bad data never reaches gold.** Pydantic validation at ingestion (invalid records → quarantine, not crash); dbt tests and model contracts on gold.
@@ -44,7 +44,7 @@ Act as a senior data engineer reviewing and pairing, not an obedient code genera
 - Fully typed; no `Any` without a comment explaining why.
 - HTTP via `httpx` with `tenacity` retries (exponential backoff, respect rate limits, retry only on retryable errors).
 - Structured JSON logging via `structlog`; every log line in a run carries `run_id`, `source`, `window_start`, `window_end`.
-- No secrets in code, tests, fixtures, or logs. Config comes from environment variables (see `.env.example`), validated with `pydantic-settings`.
+- No secrets in code, tests, fixtures, or logs. API keys travel in query strings: never log request URLs (httpx logger stays at WARNING; redaction processor in `gridcarbon.logging`). Config comes from environment variables (see `.env.example`), validated with `pydantic-settings`.
 - Tests: unit tests use recorded API fixtures in `tests/fixtures/` (never call real APIs in CI). Integration tests use Azurite. Every idempotency/MERGE behaviour has a test that runs the same window twice and asserts equality.
 - Small, focused functions; pure transformation functions separated from I/O.
 - Everything committed to the repo is in **English** (code, comments, docs, commit messages).
@@ -57,8 +57,9 @@ Act as a senior data engineer reviewing and pairing, not an obedient code genera
 uv sync                      # install dependencies
 uv run ruff check . && uv run ruff format --check .
 uv run mypy src
-uv run pytest                # unit tests
-uv run pytest -m integration # needs `docker compose up azurite`
+uv run pytest                # unit tests only (integration excluded by default)
+docker compose up -d azurite
+uv run pytest -m integration # storage/integration tests against Azurite
 uv run gridcarbon --help
 ```
 
@@ -69,7 +70,7 @@ uv run gridcarbon --help
 
 ## Do not
 
-- Add new tools, services, or dependencies without an ADR or explicit approval.
+- Add new tools, services, or dependencies without an ADR or explicit approval (approved so far: everything named in the ADRs and specs, incl. Typer, respx, gitleaks).
 - Use notebooks in the pipeline (`notebooks/` is for exploration only).
 - Introduce Kafka, Kubernetes, VMs, public IPs, or Azure Container Registry.
 - Write free-form LLM-generated SQL in the MCP server — it may only query metrics defined in the semantic layer.
