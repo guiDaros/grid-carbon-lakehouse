@@ -2,7 +2,7 @@
 
 > One task at a time. Each task leaves CI green (once CI exists) and includes its tests.
 
-- [ ] T1: `uv init` src-layout package `gridcarbon`, `.python-version` (3.12), `pyproject.toml` with ruff/mypy(strict)/pytest config (`-m "not integration"`, marker registered), `__version__`, Typer CLI with `--version`. Unit test. — FR-1, NFR-4, NFR-5
+- [x] T1: `uv init` src-layout package `gridcarbon`, `.python-version` (3.12), `pyproject.toml` with ruff/mypy(strict)/pytest config (`-m "not integration"`, marker registered), `__version__`, Typer CLI with `--version`. Unit test. — FR-1, NFR-4, NFR-5
 - [ ] T2: `.pre-commit-config.yaml` (ruff, ruff-format, mypy, gitleaks), `.gitleaks.toml` allowlist for the Azurite key, `Makefile`. — NFR-3
 - [ ] T3: `.github/workflows/ci.yml`: lint+types, unit, gitleaks jobs. — AC-3 (partial)
 - [ ] T4: `config.py` + `logging.py` (JSON, `run_id`, optional context fields omitted, redaction, httpx logger WARNING). Tests incl. secret-never-logged. — FR-3, FR-4, NFR-2
