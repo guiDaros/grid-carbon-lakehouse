@@ -1,0 +1,19 @@
+# gitleaks configuration: default rules plus one narrow allowlist entry.
+title = "gridcarbon gitleaks config"
+
+[extend]
+useDefault = true
+
+# Azurite's well-known development account key (devstoreaccount1). It is
+# published by Microsoft in the Azurite docs and only works against a local
+# emulator, so it is not a secret (NFR-3).
+#
+# The allowlist matches the extracted secret itself, anchored, so it does not
+# exempt any file or path: any other credential in the same file (or a
+# connection string with a different key) is still reported.
+[[allowlists]]
+description = "Public Azurite development account key"
+regexTarget = "secret"
+regexes = [
+    '''^Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==$''',
+]

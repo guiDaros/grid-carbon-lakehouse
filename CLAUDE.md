@@ -55,6 +55,8 @@ Act as a senior data engineer reviewing and pairing, not an obedient code genera
 
 ```bash
 uv sync                      # install dependencies
+uv run pre-commit install    # once per clone: enable git hooks (or: make setup)
+uv run pre-commit run --all-files  # ruff, ruff-format, mypy, gitleaks, whitespace (or: make lint)
 uv run ruff check . && uv run ruff format --check .
 uv run mypy src
 uv run pytest                # unit tests only (integration excluded by default)
